@@ -1,0 +1,101 @@
+---
+title: "Group 7: Project 1"
+author: "Samuel Geddie + Bryce Emery"
+format: pdf
+---
+
+```{r echo=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(broom)
+```
+
+# Dataset
+
+#### [Dataset Source Link](https://www.kaggle.com/datasets/rkiattisak/student-performance-in-mathematics?select=exams.csv)
+
+#### Description and Variables
+The data describes student's exam scores along with various personal and social characteristics.
+Observed variables include: gender, race/ethnicity, parental education, lunch program, test preparation, along with math, reading, and writing exam scores.
+
+##### `gender`
+Describes the students sex designation.
+
+- Categorical Binary, with two values 'female' and 'male'.
+
+##### `race_ethinicity`
+Describes the students racial or ethnic background. Groups are obfuscated within this data set.
+
+- Categorical, with 5 values from "Group A" to "Group E".
+
+##### `parental_level_of_education`
+Describes the highest level of education held by the students parentage.
+
+- Categorical, with 6 possible "bins" ranging from "Some Highschool" at the lowest to "Master's Degree" at the highest.
+
+##### `lunch`
+Describes the student's access or inclusion in a free or reduced price lunch program.
+- Categorical Binary, with values 'free/reduced' and 'standard'.
+
+##### `test_preparation_course`
+Describes the student's completion of a exam preparation course.
+
+- Categorical Binary, with values 'completed' and 'none'.
+
+##### `math_score`, `writing_score`, `reading_score`
+Each describes the student's exam score in the given subject, using the conventional US grading scale. With a score 70 being the expected average.
+
+- Numerical, with values 15-100
+
+#### Variables Analyzed
+* We intend to analyze every variable in our set.
+* We will be looking at the Math, Reading, and Writing Scores as our response variables.
+  * When looking at any one given score, the other's may be used as explanatory variables.
+
+#### Data Cleaning
+1. To start we load in the data, and run the `clean_names()` function from the janitor library to ensure consistency in variable names.
+2. Next, we check the extant data types and examples values of our variables to see if anything needs conversion to a more appropriate type or could be further improved for sake of readability.
+- It all looks good!
+
+```{r}
+#1. - Loading Data
+exams <- read.csv(here::here('data/exams.csv'))
+exams <- exams %>% janitor::clean_names()
+#2. - Checking data types of entries
+str(exams)
+```
+
+3. We examine our entries more closely using the `table()` functions looking for any missing (`N/A`) or superfluous entries.
+entries (e.g. outliers).
+- We find no missing or superfluous entries.
+4. We look to note any key characteristics of our data and catch potentially problematic values (e.g. outliers).
+- We find that our response variables of interest have no obvious problematic variables, and all have a similar expected shape for exam scares, being slightly left skewed.
+```{r}
+#3.- Checking for missing data
+table(exams$gender, useNA ='always')
+table(exams$race_ethnicity, useNA ='always')
+table(exams$parental_level_of_education, useNA ='always')
+table(exams$lunch, useNA ='always')
+table(exams$test_preparation_course, useNA ='always')
+table(exams$math_score, useNA ='always')
+table(exams$reading_score, useNA ='always')
+table(exams$writing_score, useNA ='always')
+# Confirmed no missing entries found
+#4. - Checking for shape of Data
+hist(exams$math_score, breaks=20)
+hist(exams$reading_score, breaks=20)
+hist(exams$writing_score, breaks=20)
+# Data shows a slightly left skewed distribution because of the way grades are averaged around 70.
+summary(exams[c('math_score', 'reading_score', 'writing_score')])
+# No unexpected values.
+```
+# Model Purposes
+We wish to calculate which of the observed criteria is most correlated with marked higher or lower test scores in students.
+
+### Research Questions
+
+1. "What parameters lead to the highest exam scores for Math, Reading, and Writing respectively?"
+2. "If we combined our reading/writing scores, what parameters correlate to higher results? Do these differ from the individual score instances."
+3. "Are higher scores in one domain predictive of higher scores in others?"
+4. "What measurable effect do subsidized lunches have on student test scores?"
+5. "Do subsidized lunches have stratified effects for students of different parental educational attainments? (Essentially, using educational attainment as a indicator for socioeconomic status."

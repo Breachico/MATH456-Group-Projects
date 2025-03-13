@@ -1,7 +1,7 @@
 ---
 title: "Group 7: Traffic Dataset Cleaning Script"
 author: "Samuel Geddie + Bryce Emery"
-format: html
+format: pdf
 ---
 
 ```{r}
@@ -109,10 +109,11 @@ traffic_accidents.clean %>%
     #geom_point()+
     theme_minimal()
 
-data <- data  %>%
-  group_by(time, group) %>%
-  summarise(n = sum(value)) %>%
-  mutate(percentage = n / sum(n))
+## Reference
+#data <- data  %>%
+#  group_by(time, group) %>%
+#  summarise(n = sum(value)) %>%
+#  mutate(percentage = n / sum(n))
 ```
 
 ##### `lighting_condition`

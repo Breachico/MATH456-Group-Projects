@@ -27,11 +27,19 @@ summary(traffic_accidents.clean)
 
 This is a combined categorical/numerical variable. It contains the Date and Time of the recorded event in the form `Month/Day/Year Hour:Minute:Second AM/PM`
 
-Note: We will be using Lubridate to handle this variable, and split it into it's composite informations (month/day/time). While these are provided, practice with the package seems useful longer term.
+Note: We will be using Lubridate to handle this variable, and split it into it's composite information (month/day/time). While these are provided, practice with the package seems useful longer term.
 
 ```{r}
 ## Needs to get split up by lubridate
 #table(traffic_accidents.clean$crash_date)
+
+## To simplify completing Project 2, we use the provided date compotent variables
+hist(traffic_accidents.clean$crash_month)
+table(traffic_accidents.clean$crash_month, useNA = 'always')
+hist(traffic_accidents.clean$crash_day_of_week)
+table(traffic_accidents.clean$crash_day_of_week, useNA = 'always')
+
+
 ```
 
 ##### `traffic_control_device`

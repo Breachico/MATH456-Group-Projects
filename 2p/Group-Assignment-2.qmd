@@ -1,0 +1,25 @@
+---
+title: "Causes and effects of Collisions on US Roadways"
+author: "Samuel Geddie & Bryce Emery"
+format: pdf
+---
+
+```{r}
+library(tidyverse)
+library(here)
+```
+
+# Problem Statemnt/Research questions
+
+- What sort of prim_cause have the worst outcomes (total_injuries or most_severe_injury)? 
+- What conditions were most associated with first_crash_type=PEDESTRIAN.
+- Which hours were most associated with  total_injuries.
+- Does a day being a holiday/celebration affect the instances of crashes that day?
+- Is there a correlation between road condition and damage?
+
+# Methods:
+- Please see file 'data/traffic-cleaning.qmd' for a link to the data source, the work done on data cleaning, and methodology.
+
+Group Member and contributions
+- Samuel Geddie 20%
+- Bryce Emery 80%

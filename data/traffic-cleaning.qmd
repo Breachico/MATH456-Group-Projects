@@ -8,7 +8,7 @@ format: pdf
 library(tidyverse)
 library(here)
 traffic_accidents.raw <- read.csv(here::here('data/traffic_accidents.csv'))
-traffic_accidents.clean <- traffic_accidents.raw %>% janitor::clean_names()
+mydata <- traffic_accidents.raw %>% janitor::clean_names()
 ```
 
 # Dataset - Traffic Accidents
@@ -20,24 +20,53 @@ traffic_accidents.clean <- traffic_accidents.raw %>% janitor::clean_names()
 The dataset contains a collection of traffic accidents scraped from the web and includes a large number of useful observed variables (24 columns!) over a large (\>200,000) entries. Example observations include details about conditions and qualities of the roadway where the accident occurred, and the type and results of the specific collision(s). On a sour note: the author does not give information on where they were scrapped from, nor the locale these recordings are from--however, given that we are going to be using this data simply for educational exercises this should be fine.
 
 ```{r}
-summary(traffic_accidents.clean)
+summary(mydata)
 ```
 
 ##### `crash_date`
 
-This is a combined categorical/numerical variable. It contains the Date and Time of the recorded event in the form `Month/Day/Year Hour:Minute:Second AM/PM`
+This is a string variable. It contains the Date and Time of the recorded event in the form `Month/Day/Year Hour:Minute:Second AM/PM`
 
-Note: We will be using Lubridate to handle this variable, and split it into it's composite information (month/day/time). While these are provided, practice with the package seems useful longer term.
+We convert this variable into a datetime (POSIXct) variable read as 'y-m-d h-m-s' for purposes of using lubridate.
+
+Note 1: Day 31 of some months and day 366 of some years naturally show significantly less reported collisions than the others. This is because less than half of months and only one in four years have such a day. If these must become of concern in the future then they will be handled here then.
+
+Note 2: We will be using Lubridate to handle this variable, and split it into it's composite information (month/day/time). While these are provided, practice with the package seems useful longer term.
+
+
+```{r}
+# mday
+# yday
+# wday
+# Converting to POSIX datetime easily manipulated by Lubridate
+mydata$crash_datetime <- mdy_hms(mydata$crash_date)
+head(mydata$crash_datetime)
+# Demonstrating equivalency
+hist(yday(mdy_hms(mydata$crash_date)))
+hist(yday(mydata$crash_datetime))
+
+hist(mday(mydata$crash_datetime))
+
+hist(wday(mydata$crash_datetime))
+
+# Here each datetime is temporarily set to the same day of Janurary 1st 2000 for sake of normalizing for 24 hours.
+mydata %>% 
+  mutate(crash_time = update(crash_datetime, yday= 1, year=2000)) %>% 
+  ggplot(aes(crash_time)) +
+  geom_freqpoly(binwidth = 3600)
+
+
+```
 
 ```{r}
 ## Needs to get split up by lubridate
-#table(traffic_accidents.clean$crash_date)
+#table(mydata$crash_date)
 
 ## To simplify completing Project 2, we use the provided date compotent variables
-hist(traffic_accidents.clean$crash_month)
-table(traffic_accidents.clean$crash_month, useNA = 'always')
-hist(traffic_accidents.clean$crash_day_of_week)
-table(traffic_accidents.clean$crash_day_of_week, useNA = 'always')
+hist(mydata$crash_month)
+table(mydata$crash_month, useNA = 'always')
+hist(mydata$crash_day_of_week)
+table(mydata$crash_day_of_week, useNA = 'always')
 
 
 ```
@@ -49,7 +78,7 @@ This is a categorical variable with 19 possible values. It includes most of the 
 With 4455 unknown values, this variable is a candidate for MICE.
 
 ```{r}
-table(traffic_accidents.clean$traffic_control_device)
+table(mydata$traffic_control_device)
 ```
 
 ##### `weather_condition`
@@ -61,16 +90,16 @@ It is a candidate for MICE analysis, especially given the likely correlates rela
 However, that same reason marks for concerns of possible confounding. Initial visual exploration plotting the two suggests this exists somewhat, but primarily for snow-related conditions (snow, hail, etc).
 
 ```{r}
-table(traffic_accidents.clean$weather_condition)
-ggplot(traffic_accidents.clean, aes(x=crash_month, y=weather_condition))+
+table(mydata$weather_condition)
+ggplot(mydata, aes(x=crash_month, y=weather_condition))+
   geom_count()
 
-traffic_accidents.clean %>%
+mydata %>%
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
   ggplot(aes(x=Month, fill=weather_condition))+
     geom_bar()
 
-traffic_accidents.clean %>% 
+mydata %>% 
   filter(weather_condition == "SNOW" | weather_condition == "SLEET/HAIL") %>% 
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
   ggplot(aes(x=Month, fill=weather_condition))+
@@ -80,7 +109,7 @@ color.values <- c('navajowhite4', 'cadetblue', 'deepskyblue3', 'darkslategrey',
                   'grey', 'turquoise3', 'purple', 'steelblue',
                   'springgreen3', 'cyan2', 'antiquewhite', 'red')
 # .groups="drop" method
-traffic_accidents.clean %>% 
+mydata %>% 
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
   group_by(Month, weather_condition) %>% 
   summarise(n = n(), .groups = "drop") %>%
@@ -96,7 +125,7 @@ traffic_accidents.clean %>%
 ## Last Try ChatGPT
 
   
-traffic_accidents.clean %>% 
+mydata %>% 
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
   group_by(Month, weather_condition) %>% 
   summarise(n = n()) %>%
@@ -125,8 +154,8 @@ One concern is that the lighting condition could be confounded by month and time
 We've included it in this report for transparency of work, and on the potential that the categories of "DARKNESS" and "DARKNESS, LIGHTED ROAD" could be of value at a later date. Perhaps adding texture to the time of day.
 
 ```{r}
-table(traffic_accidents.clean$lighting_condition)
-ggplot(traffic_accidents.clean, aes(x=crash_hour, y=lighting_condition))+
+table(mydata$lighting_condition)
+ggplot(mydata, aes(x=crash_hour, y=lighting_condition))+
   geom_count()
 ```
 
@@ -138,7 +167,7 @@ Note that it is different from "Primary Cause" in that it is describing what was
 
 
 ```{r}
-table(traffic_accidents.clean$first_crash_type)
+table(mydata$first_crash_type)
 ```
 
 ##### `trafficway_type`
@@ -146,7 +175,7 @@ table(traffic_accidents.clean$first_crash_type)
 This is a Categorical Variable with 20 possible values describing various intersections that may be encountered by motorists. 
 
 ```{r}
-table(traffic_accidents.clean$trafficway_type)
+table(mydata$trafficway_type)
 ```
 
 ##### `roadway_surface_cond`
@@ -156,7 +185,7 @@ This is a Categorical Variable with 7 possible values: "DRY", "ICE", "SNOW OR SL
 This is a candidate for MICE analysis.
 
 ```{r}
-table(traffic_accidents.clean$roadway_surface_cond)
+table(mydata$roadway_surface_cond)
 ```
 
 ##### `road_defect`
@@ -166,7 +195,7 @@ This is a Categorical Variable with 7 possible values: "DEBRIS ON ROADWAY", "SHO
 This is a candidate for MICE analysis.
 
 ```{r}
-table(traffic_accidents.clean$road_defect)
+table(mydata$road_defect)
 ```
 
 ##### `intersection_related_i`
@@ -175,8 +204,16 @@ This is a Categorical Binary Variable, with the values 'Y' and 'N'. It indicates
 Potentially of interest is whether this correlates with pedestrian injury. Given that intersections house the most common pedestrian related traffic control, being crosswalks.
 
 ```{r}
-table(traffic_accidents.clean$intersection_related_i)
+table(mydata$intersection_related_i)
 ```
+
+##### `damage`
+
+This is a Categorical Variable describing the monetary cost of damages related to the recorded collision recorded in three bins, with possible values "\$500 OR LESS", "\$501 - \$1,500", and "OVER \$1500".
+```{r}
+table(mydata$damage, useNA = 'always')
+```
+
 
 ##### `prim_contributory_cause`
 
@@ -185,7 +222,7 @@ This is a Categorical Variable with 40 possible values. It lists the primary cau
 These descriptions differ from `first_crash_type` in that they mostly speak in terms of human error..
 
 ```{r}
-table(traffic_accidents.clean$prim_contributory_cause)
+table(mydata$prim_contributory_cause)
 ```
 
 
@@ -199,8 +236,8 @@ Do to the relative infrequency of injuries among the recorded collision(s)s, it 
 This variable counts the total injuries of the recorded collision(s). The values range from 0 to 21 total injuries, with a mean of 0.38.
 
 ```{r}
-table(traffic_accidents.clean$injuries_total)
-summary(traffic_accidents.clean$injuries_total)
+table(mydata$injuries_total)
+summary(mydata$injuries_total)
 ```
 
 ##### `injuries_fatal`
@@ -210,8 +247,8 @@ This variable counts the number of fatalities resultant from the recorded collis
 Of note, extremely few of the recorded collision(s)s resulted in any fatalities (hooray), only occurring in 351/209306 or ~0.001680% of recorded collision(s)s.
 
 ```{r}
-table(traffic_accidents.clean$injuries_fatal)
-summary(traffic_accidents.clean$injuries_fatal)
+table(mydata$injuries_fatal)
+summary(mydata$injuries_fatal)
 ```
 
 
@@ -219,8 +256,8 @@ summary(traffic_accidents.clean$injuries_fatal)
 This variable counts the number of incapacitating injuries resultant from the recorded collision(s). The values range from 0 to 7 injuries, with a mean of 0.001858.
 
 ```{r}
-table(traffic_accidents.clean$injuries_incapacitating)
-summary(traffic_accidents.clean$injuries_incapacitating)
+table(mydata$injuries_incapacitating)
+summary(mydata$injuries_incapacitating)
 
 ## Add some sort of count here
 ```
@@ -232,8 +269,8 @@ This variable counts the number of non-incapacitating resultant from the recorde
 
 
 ```{r}
-table(traffic_accidents.clean$injuries_non_incapacitating)
-summary(traffic_accidents.clean$injuries_non_incapacitating)
+table(mydata$injuries_non_incapacitating)
+summary(mydata$injuries_non_incapacitating)
 ```
 
 ##### `injuries_reported_not_evident`
@@ -241,8 +278,8 @@ summary(traffic_accidents.clean$injuries_non_incapacitating)
 This is a Numerical Variable that counts the number of injuries that were reported but not visibly evident. The values range from 0 to 11 injuries, with a mean of 0.1215.
 
 ```{r}
-table(traffic_accidents.clean$injuries_reported_not_evident)
-summary(traffic_accidents.clean$injuries_reported_not_evident)
+table(mydata$injuries_reported_not_evident)
+summary(mydata$injuries_reported_not_evident)
 ```
 
 ##### `injuries_no_indication`
@@ -250,16 +287,16 @@ summary(traffic_accidents.clean$injuries_reported_not_evident)
 This is a Numerical Variable that counts the number of incidents where no injuries were reported among parties involved in the recorded collision(s). The values range from 0 to 49, with a median of 2, and a mean of 2.244.
 
 ```{r}
-table(traffic_accidents.clean$injuries_no_indication)
-summary(traffic_accidents.clean$injuries_no_indication)
+table(mydata$injuries_no_indication)
+summary(mydata$injuries_no_indication)
 ```
 
 
 
-# Data Exploration
+# Data Exploration !! TO BE MOVED TO DIFFERENT MAJOR FILES !!
 
 ```{r}
-ggplot(traffic_accidents.clean, aes(x=crash_hour, y=injuries_total))+
+ggplot(mydata, aes(x=crash_hour, y=injuries_total))+
   geom_count()
 
 ```
@@ -271,6 +308,11 @@ ggplot(traffic_accidents.clean, aes(x=crash_hour, y=injuries_total))+
 ```
 
 
+```{r}
+
+traffic_clean <- mydata %>%
+  select(-alignment, -num_units, -crash_hour, -crash_day_of_week, -crash_month, -crash_date)
 
 
-
+save(traffic_clean, file=here::here("data/traffic_accidents.Rdata"))
+```

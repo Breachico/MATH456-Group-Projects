@@ -7,6 +7,8 @@ format: pdf
 ```{r}
 library(tidyverse)
 library(here)
+load(here::here("data/traffic_accidents.Rdata"))
+View(traffic_clean)
 ```
 
 # Problem Statemnt/Research questions

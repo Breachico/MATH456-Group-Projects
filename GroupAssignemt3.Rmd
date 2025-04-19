@@ -1,0 +1,114 @@
+---
+title: "Group 7 Group Assignment 3"
+author: "Samuel Geddie and Bryce Emery"
+date: "2025-04-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+```
+
+**Important note: Previous methodology work is located in '/data/traffic-cleaning.qmd'"**
+
+
+## Methods
+
+
+
+```{r cars}
+summary(traffic_clean)
+```
+
+## Results
+
+You can also embed plots, for example:
+"Clear" Weather conditions
+```{r}
+sum(traffic_clean$lighting_condition == "DAYLIGHT")/nrow(traffic_clean)
+sum(traffic_clean$weather_condition == "CLEAR")/nrow(traffic_clean)
+```
+
+Damage Proportions
+```{r}
+sum(traffic_clean$damage== "$500 OR LESS")/nrow(traffic_clean)
+sum(traffic_clean$damage== "$501 - $1,500")/nrow(traffic_clean)
+sum(traffic_clean$damage== "OVER $1,500")/nrow(traffic_clean)
+```
+
+Intersection Types
+```{r}
+sum(traffic_clean$trafficway_type=="NOT DIVIDED")/nrow(traffic_clean)
+sum(traffic_clean$trafficway_type=="FOUR WAY")/nrow(traffic_clean)
+sum(traffic_clean$trafficway_type== "DIVIDED - W/MEDIAN (NOT RAISED)")/nrow(traffic_clean)
+
+sum(traffic_clean$trafficway_type=="ONE-WAY")/nrow(traffic_clean)
+sum(traffic_clean$trafficway_type=="CENTER TURN LANE")/nrow(traffic_clean)
+
+
+sum(traffic_clean$trafficway_type=="FIVE POINT, OR MORE")/nrow(traffic_clean)
+sum(traffic_clean$trafficway_type=="TRAFFIC ROUTE")/nrow(traffic_clean)
+sum(traffic_clean$trafficway_type=="L-INTERSECTION")/nrow(traffic_clean)
+```
+Proportion of various traffic-ways
+
+Lighting Condtion vs Damage of Accident
+```{r}
+light_dam <- data.frame(traffic_clean$lighting_condition,traffic_clean$damage)
+light_dam <- table(traffic_clean$lighting_condition,traffic_clean$damage)
+
+```
+
+```{r}
+barplot(light_dam, beside=TRUE, col=c("blue","lightblue","purple","yellow","lightgreen","grey"), main = "Damages across different Lighting Conditions", xlab= "Lighting Conditions", ylab = "Number of Accidents")
+legend("topleft", legend = rownames(light_dam), fill=c("blue","lightblue","purple","yellow","lightgreen","grey"))
+```
+
+```{r}
+barplot(table(traffic_clean$lighting_condition),col=c("blue","lightblue","purple","yellow","lightgreen","grey"), xlab= "Lighting Conditions", ylab= "Count")
+legend("topleft", legend = rownames(light_dam), fill=c("blue","lightblue","purple","yellow","lightgreen","grey"))
+```
+
+```{r}
+chisq.test(light_dam)
+           
+```
+Interestingly, the graph of accident occurrences across different lighting conditions seems quite similar to the graph created when both lighting conditions and the cost of damages incurred are both taken into account. However, the Chi-Squared Test shows there is a statistically significant correlation between the lighting conditions and the amount of damage incurred (p<0.001). 
+
+
+Primary Contributory Cause vs Type of Traffic-way
+```{r}
+trafficway_crashtype <- data.frame(traffic_clean$prim_contributory_cause,traffic_clean$trafficway_type)
+trafficway_crashtype <- table(traffic_clean$prim_contributory_cause,traffic_clean$trafficway_type)
+chisq.test(trafficway_crashtype)
+```
+Primary contributory cause for the accident and the type of traffic-way upon which the accident occurred have a statistically significant correlation (p<0.001).
+
+Intersection vs Injuries
+```{r}
+injuries_intersection <- data.frame(traffic_clean$intersection_related_i,traffic_clean$injuries_total)
+injuries_intersection <- table(traffic_clean$intersection_related_i,traffic_clean$injuries_total)
+injur_section <- lm(traffic_clean$injuries_total~traffic_clean$intersection_related_i)
+summary(injur_section)
+```
+There is a statistically significant correlation between whether the incidents happening at an intersection and how many injuries are noted (p<0.001).
+
+```{r}
+barplot(prop.table(injuries_intersection),beside=TRUE, col=c("red","green"), main="Number of Injuries at Intersections", xlab="Number of Injuries", ylab="Accident Count")
+legend("center",legend=rownames(injuries_intersection), fill=c("red","green"))
+```
+
+
+Crash Type vs Injuries
+```{r}
+crash_injury <- data.frame(traffic_clean$first_crash_type,traffic_clean$injuries_total)
+crash_injury <- table(traffic_clean$first_crash_type,traffic_clean$injuries_total)
+crash_injury_lm <- lm(traffic_clean$injuries_total~traffic_clean$first_crash_type)
+summary(crash_injury_lm)
+```
+Linear regression model shows that the location of first impact for a crash is significantly correlated with the number of injuries for all categories of impact site listed barring crashes with trains or when the first instance of the "crash" involves the car overturning.
+
+

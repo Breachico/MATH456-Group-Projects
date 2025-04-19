@@ -94,10 +94,17 @@ table(mydata$weather_condition)
 ggplot(mydata, aes(x=crash_month, y=weather_condition))+
   geom_count()
 
+
+color.values <- c('navajowhite4', 'cadetblue', 'deepskyblue3', 'darkslategrey',
+                  'grey', 'turquoise3', 'purple', 'steelblue',
+                  'springgreen3', 'cyan2', 'antiquewhite', 'red')
+
 mydata %>%
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
   ggplot(aes(x=Month, fill=weather_condition))+
-    geom_bar()
+    geom_bar()+
+    theme_minimal()+
+    scale_fill_manual(values=color.values)
 
 mydata %>% 
   filter(weather_condition == "SNOW" | weather_condition == "SLEET/HAIL") %>% 
@@ -105,9 +112,7 @@ mydata %>%
   ggplot(aes(x=Month, fill=weather_condition))+
     geom_bar()
 
-color.values <- c('navajowhite4', 'cadetblue', 'deepskyblue3', 'darkslategrey',
-                  'grey', 'turquoise3', 'purple', 'steelblue',
-                  'springgreen3', 'cyan2', 'antiquewhite', 'red')
+# Created using assistance from ChatGPT
 # .groups="drop" method
 mydata %>% 
   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
@@ -121,22 +126,18 @@ mydata %>%
     theme_minimal()+
     scale_fill_manual(values=color.values)
 
-
-## Last Try ChatGPT
-
-  
-mydata %>% 
-  mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
-  group_by(Month, weather_condition) %>% 
-  summarise(n = n()) %>%
-  mutate(percentage = n/ sum(n)) %>%
-  print() %>% 
-  ggplot(aes(x=Month, y=percentage, fill=weather_condition)) + 
-    #geom_area(alpha=0.6 , size=1, colour="black")+
-    geom_bar(stat ="identity", position="stack")+
-    scale_y_continuous(labels = scales::percent_format(), limits  =c(0,1))+
-    #geom_point()+
-    theme_minimal()
+# mydata %>% 
+#   mutate(Month = month(mdy_hms(crash_date), label=TRUE)) %>% 
+#   group_by(Month, weather_condition) %>% 
+#   summarise(n = n()) %>%
+#   mutate(percentage = n/ sum(n)) %>%
+#   print() %>% 
+#   ggplot(aes(x=Month, y=percentage, fill=weather_condition)) + 
+#     #geom_area(alpha=0.6 , size=1, colour="black")+
+#     geom_bar(stat ="identity", position="stack")+
+#     scale_y_continuous(labels = scales::percent_format(), limits  =c(0,1))+
+#     #geom_point()+
+#     theme_minimal()
 
 ## Reference
 #data <- data  %>%
@@ -233,11 +234,21 @@ Do to the relative infrequency of injuries among the recorded collision(s)s, it 
 
 ##### `injuries_total`
 
-This variable counts the total injuries of the recorded collision(s). The values range from 0 to 21 total injuries, with a mean of 0.38.
+This variable counts the total injuries of the recorded collision(s). The values range from 0 to 21 total injuries, with a mean of 0.38. We added a secondary categorical variable, `injuries_total_cat`, to consolidate the entries of ten injuries in a single collision or more, since each entry from 10-21 has single digit occurances.
 
 ```{r}
 table(mydata$injuries_total)
 summary(mydata$injuries_total)
+
+mydata <- mydata %>% mutate(
+  injuries_total_cat = case_when(
+    injuries_total < 10 ~ as.character(injuries_total),
+    injuries_total >= 10 ~ "10+"
+  ),
+  injuries_total_cat = factor(injuries_total_cat, levels=c(as.character(1:9), "10+")))
+
+table(mydata$injuries_total_cat)
+
 ```
 
 ##### `injuries_fatal`

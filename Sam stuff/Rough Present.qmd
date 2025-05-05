@@ -23,10 +23,11 @@ library(RCurl)
 library(survival)
 library(car)
 library(gtsummary)
+load(here::here("data/traffic_accidents.Rdata"))
 ```
 
 ```{r}
-traffic_clean <- traffic_accidents.clean
+#traffic_clean <- traffic_accidents.clean
 injury_cause <- traffic_clean
 injury_cause$contributory_simple <- ifelse(injury_cause$prim_contributory_cause=='CELL PHONE USE OTHER THAN TEXTING', 'DISTRACTION',
                                            ifelse(injury_cause$prim_contributory_cause=='DISREGARDING OTHER TRAFFIC SIGNS', 'DISREGARDING TRAFFIC INDICATORS',
@@ -45,29 +46,27 @@ injury_cause$contributory_simple <- ifelse(injury_cause$prim_contributory_cause=
 -   "Traffic" provides detailed information on accidents that have occurred across various times and regions with various metrics such as daylight/visibility, time of day, type of roadway, weather conditions, severity of the crash, etc.
 -   "Traffic" was created to allow for modeling regarding traffic safety, accident analysis, and predictive modeling for accident hot spots.
 
-##Exploratory "Crash_Hour"
-
+##Exploratory "crash_hour"
 ```{r}
-traffic_hour_counts <- traffic_accidents.clean %>%
-  group_by(crash_hour,)%>%
-  summarize(count=n())
-```
-```{r}
-ggplot(traffic_hour_counts, aes(x = crash_hour, y = count)) +
-  geom_line() +
-  geom_point() +
-  labs(title = "Accidents over 24 Hours", x = "Hour", y = "Count") +
-  theme_minimal()
+traffic_clean %>% 
+  mutate(crash_hour = hour(crash_datetime)) %>%
+  ggplot(aes(x=crash_hour))+
+  geom_bar(fill = "steelblue4")+
+  labs(x = "Hour of Day", y = "Total Accidents", title = "Total Accidents by Hour")
 
-ggplot(traffic_clean, aes(x = crash_hour , y = injuries_total)) +
-  geom_col() +
-  labs(title = "Injuries over 24 Hours", x = "Hour", y = "Number Injured") +
-  theme_minimal()
+traffic_clean %>% 
+  mutate(crash_hour = hour(crash_datetime)) %>% 
+  group_by(crash_hour) %>%
+  summarize(total_injuries = sum(injuries_total, na.rm = TRUE)) %>% 
+  ggplot(aes(x=crash_hour, y=total_injuries))+
+  geom_col(fill = "steelblue4")+
+  labs(x = "Hour of Day", y = "Total Injuries", title = "Total Injuries by Hour")
 
 ```
+
 Two barcharts to showcase accidents in relation to the hour of the day, the number of incidents and the total number of injured are quite similar in curve.
 
-## Exploratory Damges x Lighting
+## Exploratory Damages x Lighting
 
 ```{r}
 light_dam <- data.frame(traffic_clean$lighting_condition,traffic_clean$damage)
@@ -81,12 +80,12 @@ legend("topleft", legend = rownames(light_dam), fill=c("blue","lightblue","purpl
 
 ```
 
-Another way to show much the same, by looking at lighting conditions, we can see that the majority of accidents occur during daylight hours. What's more, accidents at night are most often with road lights present. Nothing too revolutionairy, but good to see seperate datapoints corroborating. 
+Another way to show much the same, by looking at lighting conditions, we can see that the majority of accidents occur during daylight hours. What's more, accidents at night are most often with road lights present. Nothing too revolutionairy, but good to see seperate datapoints corroborating.
 
 ## Creating a Model to Predict Damages
 
-First, damages will be simplified into a binary '1','0' for whether or not the damages were more than 1,500 dollars. 
-Then a factorial logistic regression model is fitted while using trafficway type and contributory causes as predictors for whether an accident under those conditions will result in more than 1,500 in damages.
+First, damages will be simplified into a binary '1','0' for whether or not the damages were more than 1,500 dollars. Then a factorial logistic regression model is fitted while using trafficway type and contributory causes as predictors for whether an accident under those conditions will result in more than 1,500 in damages.
+
 ```{r}
 tc2 <- injury_cause
 tc2$damage <- ifelse(tc2$damage=='OVER $1,500',1,0)
@@ -105,32 +104,32 @@ tc2_oddsig
 
 Using the contributory cause of the accident and the type of roadway the accident occured on, we can create a model to predict whether the accident will incure over 1,500 dollars in damages. With that being said with p-scores less than 0.05, types of roadway that significantly increase the likelihood the accident will cost over 1,500 are:
 
--Center Turn Lane: increases odds by 19.04% (p=0.044) 
+-Center Turn Lane: increases odds by 19.04% (p=0.044)
 
--Divided w/ non-raised Median: increases odds by 22.12% (p=0.010) 
+-Divided w/ non-raised Median: increases odds by 22.12% (p=0.010)
 
--Divided w/ Median: increases odds by 34.16% (p\<0.001) 
+-Divided w/ Median: increases odds by 34.16% (p\<0.001)
 
--Five Point (or more) Intersection: increases odds by 66.68% (p\<0.001) 
+-Five Point (or more) Intersection: increases odds by 66.68% (p\<0.001)
 
--Four Way Intersection: increases odds by 79.53% (p\<0.001) -L Intersection: increases odds by 131.11% (p\<0.001) 
+-Four Way Intersection: increases odds by 79.53% (p\<0.001) -L Intersection: increases odds by 131.11% (p\<0.001)
 
--Not Reported: increases odds by 87.32% (p\<0.001) -Other: increases odds by 32.62% (p\<0.001) 
+-Not Reported: increases odds by 87.32% (p\<0.001) -Other: increases odds by 32.62% (p\<0.001)
 
--Roundabout: increases odds by 49.66% (p=0.045) -T Intersection: increases odds by 71.81% (p\<0.001) 
+-Roundabout: increases odds by 49.66% (p=0.045) -T Intersection: increases odds by 71.81% (p\<0.001)
 
--Traffic Route: increases odds by 110.37% (p\<0.001) -Unknown: increases odds by 36.00% (p=0.003) 
+-Traffic Route: increases odds by 110.37% (p\<0.001) -Unknown: increases odds by 36.00% (p=0.003)
 
 -Unknown Intersection: increases odds by 114.16% (p\<0.001) -Y Intersection: increases odds by 50.15% (p\<0.001)
 
-Regarding the odds of incurring more than 1,500 dollars in damages with respects to the contributory cause. 
+Regarding the odds of incurring more than 1,500 dollars in damages with respects to the contributory cause.
 
--Disregarding Traffic Indicators: increases odds by 267.57% (p\<0.001) 
+-Disregarding Traffic Indicators: increases odds by 267.57% (p\<0.001)
 
--Distraction: increases odds by 90.95% (p=0.047) 
+-Distraction: increases odds by 90.95% (p=0.047)
 
--Performing Evasive Action: increases odds by 139.77% (p=0.012) 
+-Performing Evasive Action: increases odds by 139.77% (p=0.012)
 
--Reckless/Poor Driving: increases odds by 95.64% (p=0.038) 
+-Reckless/Poor Driving: increases odds by 95.64% (p=0.038)
 
 -Under Influence: increases odds by 394.50% (p\<0.001)

@@ -1,0 +1,111 @@
+---
+title: "Exploratory_analysis"
+output: html_document
+date: "2025-05-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gtsummary)
+load(here::here("data/traffic_accidents.Rdata"))
+
+```
+
+
+# Full Table Summary
+```{r}
+tbl_summary(traffic_clean)
+```
+
+
+
+## Pedestrian Injuries
+### Data Filtering
+```{r}
+traffic_clean %>% select(first_crash_type) %>% tbl_summary()
+traffic_clean <- traffic_clean %>% mutate(pedestrian_collision = case_when(
+  first_crash_type == "PEDESTRIAN" ~ TRUE,
+  first_crash_type != "PEDESTRIAN" ~ FALSE
+))
+
+traffic_clean <-  traffic_clean %>% mutate(cyclist_pedestrian_collision = case_when(
+  first_crash_type == "PEDESTRIAN" ~ TRUE,
+  first_crash_type == "PEDALCYCLIST" ~ TRUE,
+  first_crash_type != "PEDESTRIAN" & first_crash_type != "PEDALCYCLIST" ~ FALSE
+))
+```
+
+## Exploration
+
+## Total Injuries
+
+```{r}
+traffic_clean %>% filter(pedestrian_collision == 1) %>% tbl_summary()
+
+
+traffic_clean %>% filter(pedestrian_collision == 1) %>%
+  ggplot(aes(x=injuries_total))+
+  geom_bar()+
+  theme_minimal()
+
+traffic_clean %>% filter(pedestrian_collision == 1) %>% 
+  ggplot(aes(x=injuries_fatal))+
+  geom_bar()+
+  theme_minimal()
+
+traffic_clean %>% filter(pedestrian_collision == 1) %>% 
+  ggplot(aes(x=most_severe_injury))+
+  geom_bar()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+traffic_clean %>% 
+  ggplot(aes(x=most_severe_injury))+
+  geom_bar()+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+traffic_clean %>% filter(pedestrian_collision == 1 & injuries_fatal > 0) %>% 
+  nrow()
+
+traffic_clean %>% filter(injuries_fatal > 0) %>% nrow()
+
+traffic_clean %>% filter(pedestrian_collision == 1) %>% nrow()
+
+traffic_clean %>% nrow()
+
+```
+
+
+```{r}
+traffic_clean %>% select(prim_contributory_cause) %>% tbl_summary()
+
+```
+
+
+```{r}
+mydata %>% 
+  mutate(crash_time = update(crash_datetime, yday= 1, year=2000)) %>% 
+  ggplot(aes(crash_time)) +
+  geom_freqpoly(binwidth = 3600)
+
+```
+
+
+## Crash Type x Damage
+```{r}
+traffic_clean %>% select(crash_type, damage) %>%  tbl_summary()
+
+traffic_clean %>% filter(crash_type=="INJURY AND / OR TOW DUE TO CRASH") %>% 
+  ggplot(aes(x=damage))+
+  geom_bar()
+
+```
+
+
+
+
+
+

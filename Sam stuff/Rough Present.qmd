@@ -1,0 +1,136 @@
+---
+title: "Traffic Accidents 2016-2025"
+author: "Samuel Geddie and Bryce Emery"
+format: revealjs
+editor: visual
+---
+
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(include = FALSE)
+library(ggplot2)
+library(ggpubr)
+library(moderndive)
+library(tidyverse)
+library(rstatix)
+library(datarium)
+library(openintro)
+library(dplyr)
+library(knitr)
+library(lme4)
+library(lmerTest)
+library(sjPlot)
+library(RCurl)
+library(survival)
+library(car)
+library(gtsummary)
+```
+
+```{r}
+traffic_clean <- traffic_accidents.clean
+injury_cause <- traffic_clean
+injury_cause$contributory_simple <- ifelse(injury_cause$prim_contributory_cause=='CELL PHONE USE OTHER THAN TEXTING', 'DISTRACTION',
+                                           ifelse(injury_cause$prim_contributory_cause=='DISREGARDING OTHER TRAFFIC SIGNS', 'DISREGARDING TRAFFIC INDICATORS',
+                                                  ifelse(injury_cause$prim_contributory_cause=='DISREGARDING ROAD MARKINGS','DISREGARDING TRAFFIC INDICATORS',
+                                                         ifelse(injury_cause$prim_contributory_cause=='DISREGARDING STOP SIGN','DISREGARDING TRAFFIC INDICATORS',
+                                                                ifelse(injury_cause$prim_contributory_cause=='DISREGARDING TRAFFIC SIGNALS', 'DISREGARDING TRAFFIC INDICATORS',
+                                                                       ifelse(injury_cause$prim_contributory_cause=='DISTRACTION - FROM INSIDE VEHICLE','DISTRACTION',
+                                                                              ifelse(injury_cause$prim_contributory_cause=='DISTRACTION - FROM OUTSIDE VEHICLE','DISTRACTION',
+                                                                                     ifelse(injury_cause$prim_contributory_cause=='DISTRACTION - OTHER ELECTRONIC DEVICE (NAVIGATON DEVICE, DVD PLAYER, ETC.)','DISTRACTION',
+                                                                                            ifelse(injury_cause$prim_contributory_cause=='DRIVER ON WRONG SIDE/WRONG WAY','DISREGARDING TRAFFIC INDICATORS', ifelse(injury_cause$prim_contributory_cause=='DRIVING SKILLS/KNOWLEDGE/EXPERIENCE','DISREGARDING TRAFFIC INDICATORS', ifelse(injury_cause$prim_contributory_cause=='EXCEEDING AUTHORIZED SPEED LIMIT','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='EXCEEDING SAFE SPEED FOR CONDITIONS','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='FAILING TO REDUCE SPEED TO AVOID CRASH','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='FAILING TO YIELD RIGHT-OF-WAY','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='FOLLOWING TOO CLOSELY','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='IMPROPER BACKING','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='IMPROPER LANE USAGE','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='IMPROPER OVERTAKING/PASSING','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='IMPROPER TURNING/NO SIGNAL','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='OPERATING VEHICLE IN ERRATIC, RECLESS, CARELESS, NEGLIGENT, OR AGGRESSIVE MANNER','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='PASSING STOPPED SCHOOL BUS','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='ROAD CONSTRUCTION/MAINTENANCE','ROAD CONDITIONS', ifelse(injury_cause$prim_contributory_cause=='ROAD ENGINEERING/SURFACE/MARKING DEFECTS','ROAD CONDITIONS', ifelse(injury_cause$prim_contributory_cause=='VISION OBSCURED (SIGNS, TREE LIMBS, BUILDINGS, ETC.)','ROAD CONDITIONS', ifelse(injury_cause$prim_contributory_cause=='TEXTING','DISTRACTION', ifelse(injury_cause$prim_contributory_cause=='TURNING RIGHT ON RED','RECKLESS/POOR DRIVING', ifelse(injury_cause$prim_contributory_cause=='UNDER THE INFLUENCE OF ALCOHOL/DRUGS (USE WHEN ARREST IS EFFECTED)','UNDER INFLUENCE',ifelse(injury_cause$prim_contributory_cause=='HAD BEEN DRINKING (USE ONLY WHEN ARREST IS NOT MADE)','UNDER INFLUENCE',ifelse(injury_cause$prim_contributory_cause=='WEATHER','ROAD CONDITIONS', ifelse(injury_cause$prim_contributory_cause=='BICYCLE ADVANCING LEGALLY ON RED LIGHT','CYCLIST ADVANCING LEGALLY ON RED LIGHT', ifelse(injury_cause$prim_contributory_cause=='MOTORCYCLE ADVANCING LEGALLY ON RED LIGHT','CYCLIST ADVANCING LEGALLY ON RED LIGHT',ifelse(injury_cause$prim_contributory_cause=='EVASIVE ACTION DUE TO ANIMAL, OBJECT, NONMOTORIST','EVASIVE ACTION', ifelse(injury_cause$prim_contributory_cause=='NOT APPLICABLE','NOT APPLICABLE','OTHER')))))))))))))))))))))))))))))))))
+```
+
+## Introducing "Traffic"
+
+-   The data set, henceforth referred to as "Traffic", was taken from kaggle.com.
+-   "Traffic" provides detailed information on accidents that have occurred across various times and regions with various metrics such as daylight/visibility, time of day, type of roadway, weather conditions, severity of the crash, etc.
+-   "Traffic" was created to allow for modeling regarding traffic safety, accident analysis, and predictive modeling for accident hot spots.
+
+##Exploratory "Crash_Hour"
+
+```{r}
+traffic_hour_counts <- traffic_accidents.clean %>%
+  group_by(crash_hour,)%>%
+  summarize(count=n())
+```
+```{r}
+ggplot(traffic_hour_counts, aes(x = crash_hour, y = count)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Accidents over 24 Hours", x = "Hour", y = "Count") +
+  theme_minimal()
+
+ggplot(traffic_clean, aes(x = crash_hour , y = injuries_total)) +
+  geom_col() +
+  labs(title = "Injuries over 24 Hours", x = "Hour", y = "Number Injured") +
+  theme_minimal()
+
+```
+Two barcharts to showcase accidents in relation to the hour of the day, the number of incidents and the total number of injured are quite similar in curve.
+
+## Exploratory Damges x Lighting
+
+```{r}
+light_dam <- data.frame(traffic_clean$lighting_condition,traffic_clean$damage)
+light_dam <- table(traffic_clean$lighting_condition,traffic_clean$damage)
+
+```
+
+```{r}
+barplot(light_dam, beside=TRUE, col=c("blue","lightblue","purple","yellow","lightgreen","grey"), main = "Damages across different Lighting Conditions", xlab= "Lighting Conditions", ylab = "Number of Accidents")
+legend("topleft", legend = rownames(light_dam), fill=c("blue","lightblue","purple","yellow","lightgreen","grey"))
+
+```
+
+Another way to show much the same, by looking at lighting conditions, we can see that the majority of accidents occur during daylight hours. What's more, accidents at night are most often with road lights present. Nothing too revolutionairy, but good to see seperate datapoints corroborating. 
+
+## Creating a Model to Predict Damages
+
+First, damages will be simplified into a binary '1','0' for whether or not the damages were more than 1,500 dollars. 
+Then a factorial logistic regression model is fitted while using trafficway type and contributory causes as predictors for whether an accident under those conditions will result in more than 1,500 in damages.
+```{r}
+tc2 <- injury_cause
+tc2$damage <- ifelse(tc2$damage=='OVER $1,500',1,0)
+tc2_glm <- glm(damage~trafficway_type+contributory_simple,data=tc2,family=binomial)
+summary(tc2_glm)
+```
+
+```{r}
+tc2_odd <- data.frame(exp(coef(tc2_glm))-1)
+tc2_odd$conf <- coef(summary(tc2_glm))[,4]
+tc2_oddsig <- tc2_odd%>%filter(tc2_odd$conf<0.05)
+tc2_oddsig
+```
+
+## Interpretation of Model
+
+Using the contributory cause of the accident and the type of roadway the accident occured on, we can create a model to predict whether the accident will incure over 1,500 dollars in damages. With that being said with p-scores less than 0.05, types of roadway that significantly increase the likelihood the accident will cost over 1,500 are:
+
+-Center Turn Lane: increases odds by 19.04% (p=0.044) 
+
+-Divided w/ non-raised Median: increases odds by 22.12% (p=0.010) 
+
+-Divided w/ Median: increases odds by 34.16% (p\<0.001) 
+
+-Five Point (or more) Intersection: increases odds by 66.68% (p\<0.001) 
+
+-Four Way Intersection: increases odds by 79.53% (p\<0.001) -L Intersection: increases odds by 131.11% (p\<0.001) 
+
+-Not Reported: increases odds by 87.32% (p\<0.001) -Other: increases odds by 32.62% (p\<0.001) 
+
+-Roundabout: increases odds by 49.66% (p=0.045) -T Intersection: increases odds by 71.81% (p\<0.001) 
+
+-Traffic Route: increases odds by 110.37% (p\<0.001) -Unknown: increases odds by 36.00% (p=0.003) 
+
+-Unknown Intersection: increases odds by 114.16% (p\<0.001) -Y Intersection: increases odds by 50.15% (p\<0.001)
+
+Regarding the odds of incurring more than 1,500 dollars in damages with respects to the contributory cause. 
+
+-Disregarding Traffic Indicators: increases odds by 267.57% (p\<0.001) 
+
+-Distraction: increases odds by 90.95% (p=0.047) 
+
+-Performing Evasive Action: increases odds by 139.77% (p=0.012) 
+
+-Reckless/Poor Driving: increases odds by 95.64% (p=0.038) 
+
+-Under Influence: increases odds by 394.50% (p\<0.001)
